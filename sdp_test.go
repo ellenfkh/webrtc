@@ -376,7 +376,7 @@ func TestPopulateSDP(t *testing.T) {
 		assert.NoError(t, me.RegisterDefaultCodecs())
 		api := NewAPI(WithMediaEngine(me))
 
-		tr := &RTPTransceiver{kind: RTPCodecTypeVideo, api: api, codecs: me.videoCodecs}
+		tr := &RTPTransceiver{kind: RTPCodecTypeVideo, api: api, codecs: me.getCodecsByKind(RTPCodecTypeVideo)}
 		tr.setDirection(RTPTransceiverDirectionRecvonly)
 		ridMap := map[string]string{
 			"ridkey": "some",
@@ -411,10 +411,11 @@ func TestPopulateSDP(t *testing.T) {
 		me := &MediaEngine{}
 		assert.NoError(t, me.RegisterDefaultCodecs())
 		api := NewAPI(WithMediaEngine(me))
-		me.pushCodecs(me.videoCodecs, RTPCodecTypeVideo)
-		me.pushCodecs(me.audioCodecs, RTPCodecTypeAudio)
+		//me.pushCodecs(me.videoCodecs, RTPCodecTypeVideo)
+		//me.pushCodecs(me.audioCodecs, RTPCodecTypeAudio)
 
-		tr := &RTPTransceiver{kind: RTPCodecTypeVideo, api: api, codecs: me.videoCodecs}
+		//tr := &RTPTransceiver{kind: RTPCodecTypeVideo, api: api, codecs: me.videoCodecs}
+		tr := &RTPTransceiver{kind: RTPCodecTypeVideo, api: api, codecs: me.getCodecsByKind(RTPCodecTypeVideo)}
 		tr.setDirection(RTPTransceiverDirectionRecvonly)
 		codecErr := tr.SetCodecPreferences([]RTPCodecParameters{
 			{
@@ -480,7 +481,8 @@ func TestPopulateSDP(t *testing.T) {
 		assert.NoError(t, registerCodecErr)
 		api := NewAPI(WithMediaEngine(me))
 
-		videoTransceiver := &RTPTransceiver{kind: RTPCodecTypeVideo, api: api, codecs: me.videoCodecs}
+		//videoTransceiver := &RTPTransceiver{kind: RTPCodecTypeVideo, api: api, codecs: me.videoCodecs}
+		videoTransceiver := &RTPTransceiver{kind: RTPCodecTypeVideo, api: api, codecs: me.getCodecsByKind(RTPCodecTypeVideo)}
 		audioTransceiver := &RTPTransceiver{kind: RTPCodecTypeAudio, api: api, codecs: []RTPCodecParameters{}}
 		mediaSections := []mediaSection{{id: "video", transceivers: []*RTPTransceiver{videoTransceiver}}, {id: "audio", transceivers: []*RTPTransceiver{audioTransceiver}}}
 

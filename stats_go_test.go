@@ -320,12 +320,8 @@ func TestPeerConnection_GetStats(t *testing.T) {
 	assert.NotEmpty(t, findRemoteCandidateStats(reportPCAnswer))
 	assert.NotEmpty(t, findCandidatePairStats(t, reportPCAnswer))
 	assert.NoError(t, err)
-	for i := range offerPC.api.mediaEngine.videoCodecs {
-		codecStat := getCodecStats(t, reportPCOffer, &(offerPC.api.mediaEngine.videoCodecs[i]))
-		assert.NotEmpty(t, codecStat)
-	}
-	for i := range offerPC.api.mediaEngine.audioCodecs {
-		codecStat := getCodecStats(t, reportPCOffer, &(offerPC.api.mediaEngine.audioCodecs[i]))
+	for i := range offerPC.api.mediaEngine.codecs {
+		codecStat := getCodecStats(t, reportPCOffer, &(offerPC.api.mediaEngine.codecs[i]))
 		assert.NotEmpty(t, codecStat)
 	}
 
