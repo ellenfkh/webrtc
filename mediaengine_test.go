@@ -63,8 +63,7 @@ t=0 0
 		assert.NoError(t, m.RegisterDefaultCodecs())
 		assert.NoError(t, m.updateFromRemoteDescription(mustParse(noMedia)))
 
-		//assert.False(t, m.negotiatedVideo)
-		//assert.False(t, m.negotiatedAudio)
+		assert.Equal(t, len(m.negotiatedCodecs), 0)
 	})
 
 	t.Run("Enable Opus", func(t *testing.T) {
@@ -82,12 +81,36 @@ a=mid:1
 		assert.NoError(t, m.RegisterDefaultCodecs())
 		assert.NoError(t, m.updateFromRemoteDescription(mustParse(opusSamePayload)))
 
-		//assert.False(t, m.negotiatedVideo)
-		//assert.True(t, m.negotiatedAudio)
+		opusCodec, _, err := m.getCodecByPayload(111)
+		assert.NoError(t, err)
+		assert.Equal(t, opusCodec.MimeType, MimeTypeOpus)
+	})
+
+	t.Run("Enable audio and video", func(t *testing.T) {
+		const opusSamePayload = `v=0
+o=- 4596489990601351948 2 IN IP4 127.0.0.1
+s=-
+t=0 0
+m=audio 9 UDP/TLS/RTP/SAVPF 111
+a=rtpmap:111 opus/48000/2
+a=fmtp:111 minptime=10; useinbandfec=1
+a=mid:1
+m=video 60323 UDP/TLS/RTP/SAVPF 96
+a=rtpmap:96 VP8/90000
+a=mid:2
+`
+
+		m := MediaEngine{}
+		assert.NoError(t, m.RegisterDefaultCodecs())
+		assert.NoError(t, m.updateFromRemoteDescription(mustParse(opusSamePayload)))
 
 		opusCodec, _, err := m.getCodecByPayload(111)
 		assert.NoError(t, err)
 		assert.Equal(t, opusCodec.MimeType, MimeTypeOpus)
+
+		vp8Codec, _, err := m.getCodecByPayload(96)
+		assert.NoError(t, err)
+		assert.Equal(t, vp8Codec.MimeType, MimeTypeVP8)
 	})
 
 	t.Run("Change Payload Type", func(t *testing.T) {
@@ -105,11 +128,8 @@ a=mid:1
 		assert.NoError(t, m.RegisterDefaultCodecs())
 		assert.NoError(t, m.updateFromRemoteDescription(mustParse(opusSamePayload)))
 
-		//assert.False(t, m.negotiatedVideo)
-		//assert.True(t, m.negotiatedAudio)
-
-		//_, _, err := m.getCodecByPayload(111)
-		//assert.Error(t, err)
+		_, _, err := m.getCodecByPayload(111)
+		assert.Error(t, err)
 
 		assert.Equal(t, len(m.negotiatedCodecs), 1)
 
@@ -133,9 +153,6 @@ a=mid:1
 		assert.NoError(t, m.RegisterDefaultCodecs())
 		assert.NoError(t, m.updateFromRemoteDescription(mustParse(opusSamePayload)))
 
-		//assert.False(t, m.negotiatedVideo)
-		//assert.True(t, m.negotiatedAudio)
-
 		opusCodec, _, err := m.getCodecByPayload(96)
 		assert.NoError(t, err)
 		assert.Equal(t, opusCodec.MimeType, MimeTypeOpus)
@@ -156,9 +173,6 @@ a=mid:1
 		assert.NoError(t, m.RegisterDefaultCodecs())
 		assert.NoError(t, m.updateFromRemoteDescription(mustParse(opusUpcase)))
 
-		//assert.False(t, m.negotiatedVideo)
-		//assert.True(t, m.negotiatedAudio)
-
 		opusCodec, _, err := m.getCodecByPayload(111)
 		assert.NoError(t, err)
 		assert.Equal(t, opusCodec.MimeType, "audio/OPUS")
@@ -177,9 +191,6 @@ a=mid:1
 		m := MediaEngine{}
 		assert.NoError(t, m.RegisterDefaultCodecs())
 		assert.NoError(t, m.updateFromRemoteDescription(mustParse(opusNoFmtp)))
-
-		//assert.False(t, m.negotiatedVideo)
-		//assert.True(t, m.negotiatedAudio)
 
 		opusCodec, _, err := m.getCodecByPayload(111)
 		assert.NoError(t, err)
@@ -203,9 +214,6 @@ a=mid:1
 		registerSimulcastHeaderExtensions(&m, RTPCodecTypeAudio)
 		assert.NoError(t, m.updateFromRemoteDescription(mustParse(headerExtensions)))
 
-		//assert.False(t, m.negotiatedVideo)
-		//assert.True(t, m.negotiatedAudio)
-
 		absID, absAudioEnabled, absVideoEnabled := m.getHeaderExtensionID(RTPHeaderExtensionCapability{sdp.ABSSendTimeURI})
 		assert.Equal(t, absID, 0)
 		assert.False(t, absAudioEnabled)
@@ -227,7 +235,6 @@ a=rtpmap:111 opus/48000/2
 a=mid:1
 m=audio 9 UDP/TLS/RTP/SAVPF 111
 a=extmap:7 urn:ietf:params:rtp-hdrext:sdes:mid
-a=extmap:5 urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id
 a=rtpmap:111 opus/48000/2
 a=mid:2
 `
@@ -236,9 +243,6 @@ a=mid:2
 		assert.NoError(t, m.RegisterDefaultCodecs())
 		registerSimulcastHeaderExtensions(&m, RTPCodecTypeAudio)
 		assert.NoError(t, m.updateFromRemoteDescription(mustParse(headerExtensions)))
-
-		//assert.False(t, m.negotiatedVideo)
-		//assert.True(t, m.negotiatedAudio)
 
 		absID, absAudioEnabled, absVideoEnabled := m.getHeaderExtensionID(RTPHeaderExtensionCapability{sdp.ABSSendTimeURI})
 		assert.Equal(t, absID, 0)
@@ -249,6 +253,19 @@ a=mid:2
 		assert.Equal(t, midID, 7)
 		assert.True(t, midAudioEnabled)
 		assert.False(t, midVideoEnabled)
+
+		params1, err := m.getRTPParametersByMid("1")
+		assert.NoError(t, err)
+		assert.Equal(t, params1.Codecs[0].MimeType, MimeTypeOpus)
+		assert.Equal(t, params1.HeaderExtensions, []RTPHeaderExtensionParameter{})
+
+		params2, err := m.getRTPParametersByMid("2")
+		assert.NoError(t, err)
+		assert.Equal(t, params2.Codecs[0].MimeType, MimeTypeOpus)
+
+		assert.Equal(t, params2.HeaderExtensions, []RTPHeaderExtensionParameter{
+			{URI: sdp.SDESMidURI, ID: midID},
+		})
 	})
 
 	t.Run("Prefers exact codec matches", func(t *testing.T) {
@@ -269,9 +286,6 @@ a=mid:1
 			PayloadType:        127,
 		}, RTPCodecTypeVideo))
 		assert.NoError(t, m.updateFromRemoteDescription(mustParse(profileLevels)))
-
-		//assert.True(t, m.negotiatedVideo)
-		//assert.False(t, m.negotiatedAudio)
 
 		supportedH264, _, err := m.getCodecByPayload(98)
 		assert.NoError(t, err)
@@ -318,8 +332,6 @@ a=mid:1
 		}, RTPCodecTypeVideo))
 		assert.NoError(t, m.updateFromRemoteDescription(mustParse(profileLevels)))
 
-		//assert.True(t, m.negotiatedVideo)
-
 		_, _, err := m.getCodecByPayload(96)
 		assert.NoError(t, err)
 	})
@@ -339,8 +351,6 @@ a=mid:1
 			PayloadType:        96,
 		}, RTPCodecTypeVideo))
 		assert.NoError(t, m.updateFromRemoteDescription(mustParse(profileLevels)))
-
-		//assert.True(t, m.negotiatedVideo)
 
 		_, _, err := m.getCodecByPayload(96)
 		assert.NoError(t, err)
@@ -374,8 +384,6 @@ a=mid:1
 		}, RTPCodecTypeVideo))
 		assert.NoError(t, m.updateFromRemoteDescription(mustParse(profileLevels)))
 
-		//assert.True(t, m.negotiatedVideo)
-
 		_, _, err := m.getCodecByPayload(97)
 		assert.NoError(t, err)
 	})
@@ -408,8 +416,6 @@ a=mid:1
 		}, RTPCodecTypeVideo))
 		assert.NoError(t, m.updateFromRemoteDescription(mustParse(profileLevels)))
 
-		//assert.True(t, m.negotiatedVideo)
-
 		_, _, err := m.getCodecByPayload(97)
 		assert.ErrorIs(t, err, ErrCodecNotFound)
 	})
@@ -437,7 +443,6 @@ a=mid:2
 		}, RTPCodecTypeVideo))
 
 		assert.NoError(t, m.updateFromRemoteDescription(mustParse(mixedCodecs)))
-		//assert.True(t, m.negotiatedVideo)
 
 		vp8Codec, _, err := m.getCodecByPayload(94)
 		assert.NoError(t, err)
@@ -446,9 +451,7 @@ a=mid:2
 		vp9Codec, _, err := m.getCodecByPayload(96)
 		assert.NoError(t, err)
 		assert.Equal(t, vp9Codec.MimeType, MimeTypeVP9)
-
 	})
-
 }
 
 func TestMediaEngineHeaderExtensionDirection(t *testing.T) {
@@ -537,7 +540,6 @@ func TestMediaEngineDoubleRegister(t *testing.T) {
 }
 
 // The cloned MediaEngine instance should be able to update negotiated header extensions.
-/*
 func TestUpdateHeaderExtenstionToClonedMediaEngine(t *testing.T) {
 	src := MediaEngine{}
 
@@ -550,7 +552,8 @@ func TestUpdateHeaderExtenstionToClonedMediaEngine(t *testing.T) {
 	assert.NoError(t, src.RegisterHeaderExtension(RTPHeaderExtensionCapability{"test-extension"}, RTPCodecTypeAudio))
 
 	validate := func(m *MediaEngine) {
-		assert.NoError(t, m.updateHeaderExtension(2, "test-extension", RTPCodecTypeAudio))
+		_, err := m.updateHeaderExtension(2, "test-extension")
+		assert.NoError(t, err)
 
 		id, audioNegotiated, videoNegotiated := m.getHeaderExtensionID(RTPHeaderExtensionCapability{URI: "test-extension"})
 		assert.Equal(t, 2, id)
@@ -561,7 +564,6 @@ func TestUpdateHeaderExtenstionToClonedMediaEngine(t *testing.T) {
 	validate(&src)
 	validate(src.copy())
 }
-*/
 
 func TestExtensionIdCollision(t *testing.T) {
 	mustParse := func(raw string) sdp.SessionDescription {
@@ -590,9 +592,6 @@ a=rtpmap:111 opus/48000/2
 	assert.NoError(t, m.RegisterHeaderExtension(RTPHeaderExtensionCapability{sdp.AudioLevelURI}, RTPCodecTypeAudio))
 
 	assert.NoError(t, m.updateFromRemoteDescription(mustParse(sdpSnippet)))
-
-	//assert.True(t, m.negotiatedAudio)
-	//assert.False(t, m.negotiatedVideo)
 
 	id, audioNegotiated, videoNegotiated := m.getHeaderExtensionID(RTPHeaderExtensionCapability{sdp.ABSSendTimeURI})
 	assert.Equal(t, id, 0)

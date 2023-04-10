@@ -447,6 +447,7 @@ func (m *MediaEngine) updateHeaderExtension(id int, extension string) (bool, err
 
 	if ext, ok := m.headerExtensions[extension]; ok {
 		m.negotiatedHeaderExtensions[id] = ext
+		return true, nil
 	}
 
 	return false, nil
@@ -512,7 +513,7 @@ func (m *MediaEngine) updateFromRemoteDescription(desc sdp.SessionDescription) e
 		if err != nil {
 			return err
 		}
-		matchedHeaders := make([]RTPHeaderExtensionParameter, len(extensions))
+		matchedHeaders := make([]RTPHeaderExtensionParameter, 0, len(extensions))
 
 		for extension, id := range extensions {
 			added, err := m.updateHeaderExtension(id, extension)

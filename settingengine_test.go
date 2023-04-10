@@ -142,7 +142,6 @@ func TestSettingEngine_SetICETCP(t *testing.T) {
 	assert.Equal(t, tcpMux, settingEngine.iceTCPMux)
 }
 
-/*
 func TestSettingEngine_SetDisableMediaEngineCopy(t *testing.T) {
 	t.Run("Copy", func(t *testing.T) {
 		m := &MediaEngine{}
@@ -159,12 +158,10 @@ func TestSettingEngine_SetDisableMediaEngineCopy(t *testing.T) {
 		assert.NoError(t, signalPair(offerer, answerer))
 
 		// Assert that the MediaEngine the user created isn't modified
-		assert.False(t, m.negotiatedVideo)
-		assert.Empty(t, m.negotiatedVideoCodecs)
+		assert.Empty(t, m.negotiatedCodecs)
 
 		// Assert that the internal MediaEngine is modified
-		assert.True(t, offerer.api.mediaEngine.negotiatedVideo)
-		assert.NotEmpty(t, offerer.api.mediaEngine.negotiatedVideoCodecs)
+		assert.NotEmpty(t, offerer.api.mediaEngine.negotiatedCodecs)
 
 		closePairNow(t, offerer, answerer)
 
@@ -172,12 +169,10 @@ func TestSettingEngine_SetDisableMediaEngineCopy(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Assert that the first internal MediaEngine hasn't been cleared
-		assert.True(t, offerer.api.mediaEngine.negotiatedVideo)
-		assert.NotEmpty(t, offerer.api.mediaEngine.negotiatedVideoCodecs)
+		assert.NotEmpty(t, offerer.api.mediaEngine.negotiatedCodecs)
 
 		// Assert that the new internal MediaEngine isn't modified
-		assert.False(t, newOfferer.api.mediaEngine.negotiatedVideo)
-		assert.Empty(t, newAnswerer.api.mediaEngine.negotiatedVideoCodecs)
+		assert.Empty(t, offerer.api.mediaEngine.negotiatedCodecs)
 
 		closePairNow(t, newOfferer, newAnswerer)
 	})
@@ -200,8 +195,7 @@ func TestSettingEngine_SetDisableMediaEngineCopy(t *testing.T) {
 		assert.NoError(t, signalPair(offerer, answerer))
 
 		// Assert that the user MediaEngine was modified, so no copy happened
-		assert.True(t, m.negotiatedVideo)
-		assert.NotEmpty(t, m.negotiatedVideoCodecs)
+		assert.NotEmpty(t, m.negotiatedCodecs)
 
 		closePairNow(t, offerer, answerer)
 
@@ -209,13 +203,11 @@ func TestSettingEngine_SetDisableMediaEngineCopy(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Assert that the new internal MediaEngine was modified, so no copy happened
-		assert.True(t, offerer.api.mediaEngine.negotiatedVideo)
-		assert.NotEmpty(t, offerer.api.mediaEngine.negotiatedVideoCodecs)
+		assert.NotEmpty(t, offerer.api.mediaEngine.negotiatedCodecs)
 
 		closePairNow(t, offerer, answerer)
 	})
 }
-*/
 
 func TestSetDTLSRetransmissionInterval(t *testing.T) {
 	s := SettingEngine{}
